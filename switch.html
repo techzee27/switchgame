@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Switch based challenge</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg,  #a0caf5 0%, #8baef9 100%);
+      padding: 0;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      color: #2c3e50;
+    }
+
+    .header {
+      text-align: center;
+      margin: 40px 0 20px;
+      color: rgb(28, 103, 252);
+    }
+
+    .header h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin: 0 0 10px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      margin: 0;
+      max-width: 600px;
+      line-height: 1.5;
+    }
+
+    .puzzle-tag {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+
+    .levels-container {
+      display: flex;
+      gap: 30px;
+      margin: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 1200px;
+    }
+
+    .level-card {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      width: 280px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .level-card:hover:not(.locked) {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .level-card.locked {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .level-card.locked::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.1);
+      z-index: 1;
+    }
+
+    .level-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+    }
+
+    .easy .level-icon {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .moderate .level-icon {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .hard .level-icon {
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    }
+
+    .level-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+
+    .level-subtitle {
+      text-align: center;
+      color: #7f8c8d;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      padding: 4px 12px;
+      background: #f8f9fa;
+      border-radius: 15px;
+      display: inline-block;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .easy .level-subtitle {
+      background: #e8f5e8;
+      color: #27ae60;
+    }
+
+    .moderate .level-subtitle {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .hard .level-subtitle {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .level-description {
+      font-size: 0.9rem;
+      color: #5a6c7d;
+      line-height: 1.5;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+
+    .level-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+      color: #7f8c8d;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      color: #2c3e50;
+      font-size: 1rem;
+    }
+
+    .start-button {
+      width: 100%;
+      background: linear-gradient(135deg, #6ee2ff 0%, #7189ff 100%);
+      color: white;
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .start-button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .start-button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .lock-info {
+      background: #fff3cd;
+      color: #856404;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-bottom: 15px;
+      border: 1px solid #ffeeba;
+    }
+
+    .progress-bar {
+      background: #e9ecef;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, #28a745, #20c997);
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .game-container {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      width: 90vw;
+      max-width: 700px;
+      margin: 20px;
+      display: none;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #f8f9fa;
+    }
+
+    .timer, .score {
+      background: linear-gradient(135deg, #3199f5);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .back-btn {
+      background: #3199f5;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background: #11d3ff;
+      transform: translateY(-1px);
+    }
+
+    .symbols {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      font-size: 32px;
+      margin: 20px 0;
+    }
+
+    .symbol {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #3199f5);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .funnel {
+      width: 0;
+      height: 0;
+      border-left: 25px solid transparent;
+      border-right: 25px solid transparent;
+      margin: 10px auto;
+      border-bottom: 30px solid  #3199f5;
+    }
+
+    .number-box {
+      background: white;
+      border: 2px solid #3199f5;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 24px;
+      font-weight: bold;
+      display: inline-block;
+      margin: 10px 0;
+      min-width: 80px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+    }
+
+    .centered-wrap {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .options {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 25px 0;
+      flex-wrap: wrap;
+    }
+
+    .option {
+      background: white;
+      border: 2px solid  #3199f5;
+      padding: 15px 25px;
+      font-size: 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 80px;
+      color: #2c3e50;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .option:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .correct {
+      background: #28a745 !important;
+      border-color: #28a745 !important;
+      color: white !important;
+    }
+
+    .incorrect {
+      background: #dc3545 !important;
+      border-color: #dc3545 !important;
+      color: white !important;
+    }
+
+    .result {
+      font-size: 18px;
+      margin-top: 15px;
+      font-weight: bold;
+      min-height: 30px;
+      text-align: center;
+    }
+
+    .instructions {
+      background: linear-gradient(135deg, #cce4fd, #b8d6fb);
+      padding: 20px;
+      border-radius: 15px;
+      margin-top: 30px;
+      border: 2px solid #60b0ff;
+    }
+
+    .instructions h3 {
+      color: #010101;
+      margin-bottom: 15px;
+      text-align: center;
+      font-size: 1.2rem;
+    }
+
+    .instructions p {
+      color: #2e343a;
+      line-height: 1.6;
+      margin: 10px 0;
+    }
+
+    .game-over {
+      text-align: center;
+      font-size: 1.5rem;
+      color: #2c3e50;
+      margin: 20px 0;
+    }
+
+    .final-score {
+      font-size: 2rem;
+      color: #28a745;
+      font-weight: bold;
+      text-align: center;
+      margin: 15px 0;
+    }
+
+    @media (max-width: 768px) {
+      .levels-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+      
+      .level-card {
+        width: 90%;
+        max-width: 350px;
+      }
+      
+      .header h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Switch Based Challenge</h1>
+    <p>Challenge Your Mind, Master the Sequence</p>
+  </div>
+
+  <div id="levelSelector" class="levels-container">
+    <div class="level-card easy" data-level="easy">
+      <div class="level-icon">🎯</div>
+      <div class="level-title">Easy</div>
+      <div class="level-subtitle">Perfect for beginners</div>
+      <div class="level-description">Start your puzzle journey with simpler layouts and generous time limits. Perfect for learning the mechanics.</div>
+      
+      <div class="level-stats">
+        <div class="stat-item">
+          <div class="stat-value">4</div>
+          <div>Shapes</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">360s</div>
+          <div>Time Limit</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">0</div>
+          <div>Permutation row</div>
+        </div>
+      </div>
+      
+      <div class="progress-section">
+        <div>Unlock Progress: </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="easyProgressBar" style="width: 0%"></div>
+        </div>
+      </div>
+      <br>
+      <button class="start-button" data-level="easy">▶ Start Easy Mode</button>
+    </div>
+
+    <div class="level-card moderate locked" data-level="moderate">
+      <div class="level-icon">⚡</div>
+      <div class="level-title">Moderate</div>
+      <div class="level-subtitle">A balanced challenge</div>
+      <div class="level-description">Challenge yourself with more complex arrangements and strategic obstacles that require careful planning.</div>
+      
+      <div class="lock-info">Need 75% accuracy in Easy mode to unlock</div>
+      
+      <div class="level-stats">
+        <div class="stat-item">
+          <div class="stat-value">4</div>
+          <div>Shapes</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">360s</div>
+          <div>Time Limit</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">1</div>
+          <div>Permutation row</div>
+        </div>
+      </div>
+      
+      <div class="progress-section">
+        <div>Unlock Progress: </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="moderateProgressBar" style="width: 0%"></div>
+        </div>
+      </div>
+      <br>
+      <button class="start-button" data-level="moderate" disabled>🔒 Locked</button>
+    </div>
+
+    <div class="level-card hard locked" data-level="hard">
+      <div class="level-icon">🏆</div>
+      <div class="level-title">Hard</div>
+      <div class="level-subtitle">For puzzle masters</div>
+      <div class="level-description">Push your limits with intricate puzzles that demand advanced spatial reasoning and tactical thinking.</div>
+      
+      <div class="lock-info">Need 75% accuracy in Moderate mode to unlock</div>
+      
+      <div class="level-stats">
+        <div class="stat-item">
+          <div class="stat-value">4</div>
+          <div>Shapes</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">360s</div>
+          <div>Time Limit</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">2</div>
+          <div>Permutation rows</div>
+        </div>
+      </div>
+      
+      <div class="progress-section">
+        <div>Unlock Progress:</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="hardProgressBar" style="width: 0%"></div>
+        </div>
+      </div>
+      <br>
+      <button class="start-button" data-level="hard" disabled>🔒 Locked</button>
+    </div>
+     <div class="instructions">
+      <h3>How to Play</h3>
+      <p>• You have 6 minutes to solve as many challenges as possible. Score increases by 1 for each correct answer.</p>
+      <p>• <strong>Easy:</strong> Map symbols from top to bottom row directly.</p>
+      <p>• <strong>Moderate:</strong> Top row → 1 permutation step → bottom row.</p>
+      <p>• <strong>Hard:</strong> Top row → 2 permutation steps → bottom row.</p>
+      <p>• Select the correct number sequence that maps current symbols to the final row.</p>
+    </div>
+  </div>
+
+  <div id="gameContainer" class="game-container">
+    <div class="game-header">
+      <div class="timer">Time: <span id="time">06:00</span></div>
+      <div class="score">Score: <span id="score">0</span></div>
+      <button class="back-btn" id="backBtn">← Back to Menu</button>
+    </div>
+    
+    <div id="gameArea">
+      <div class="result" id="resultText"></div>
+    </div>
+    
+    <div class="instructions">
+      <h3>How to Play</h3>
+      <p>• You have 6 minutes to solve as many challenges as possible. Score increases by 1 for each correct answer.</p>
+      <p>• <strong>Easy:</strong> Map symbols from top to bottom row directly.</p>
+      <p>• <strong>Moderate:</strong> Top row → 1 permutation step → bottom row.</p>
+      <p>• <strong>Hard:</strong> Top row → 2 permutation steps → bottom row.</p>
+      <p>• Select the correct number sequence that maps current symbols to the final row.</p>
+    </div>
+  </div>
+
+  <script>
+    // Game state and configuration
+    const shapes_easy = ["🔵","🟨","🔺","⭐"];
+    const shapes_moderate = ["🔵","🟨","🔺","⭐"];
+    const shapes_hard = ["🔵","🟨","🔺","⭐"];
+    
+    let currentLevel = null;
+    let gameActive = false;
+    let timerInterval = null;
+    let timeLeft = 360;
+    let score = 0;
+    let currentCorrectAnswer = "";
+    let challengesAttempted = 0;
+    let correctAnswers = 0;
+
+    // Level progress tracking
+    let levelProgress = {
+      easy: { attempted: 0, correct: 0, unlocked: true },
+      moderate: { attempted: 0, correct: 0, unlocked: false },
+      hard: { attempted: 0, correct: 0, unlocked: false }
+    };
+
+    // Load progress from localStorage
+    function loadProgress() {
+      const saved = localStorage.getItem('switchChallengeProgress');
+      if (saved) {
+        levelProgress = { ...levelProgress, ...JSON.parse(saved) };
+      }
+      updateLevelCards();
+    }
+
+    // Save progress to localStorage
+    function saveProgress() {
+      localStorage.setItem('switchChallengeProgress', JSON.stringify(levelProgress));
+    }
+
+    // Check if level should be unlocked based on accuracy
+    function checkLevelUnlock() {
+      // Check moderate unlock (75% accuracy in easy)
+      if (!levelProgress.moderate.unlocked && levelProgress.easy.attempted >= 4) {
+        const accuracy = (levelProgress.easy.correct / levelProgress.easy.attempted) * 100;
+        if (accuracy >= 75) {
+          levelProgress.moderate.unlocked = true;
+        }
+      }
+
+      // Check hard unlock (75% accuracy in moderate)
+      if (!levelProgress.hard.unlocked && levelProgress.moderate.attempted >= 4) {
+        const accuracy = (levelProgress.moderate.correct / levelProgress.moderate.attempted) * 100;
+        if (accuracy >= 75) {
+          levelProgress.hard.unlocked = true;
+        }
+      }
+
+      updateLevelCards();
+      saveProgress();
+    }
+
+    // Update level cards UI
+    function updateLevelCards() {
+      const levels = ['easy', 'moderate', 'hard'];
+      
+      levels.forEach(level => {
+        const card = document.querySelector(`.level-card[data-level="${level}"]`);
+        const button = card.querySelector('.start-button');
+        const progressSpan = document.getElementById(`${level}Progress`);
+        const progressBar = document.getElementById(`${level}ProgressBar`);
+        
+        if (levelProgress[level].unlocked) {
+          card.classList.remove('locked');
+          button.disabled = false;
+          button.textContent = `▶ Start ${level.charAt(0).toUpperCase() + level.slice(1)} Mode`;
+          
+          // Remove lock info
+          const lockInfo = card.querySelector('.lock-info');
+          if (lockInfo) lockInfo.style.display = 'none';
+        } else {
+          card.classList.add('locked');
+          button.disabled = true;
+          button.textContent = '🔒 Locked';
+        }
+
+        // Update progress
+        const attempted = levelProgress[level].attempted;
+        const correct = levelProgress[level].correct;
+        const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+        
+        if (progressSpan) {
+          progressSpan.textContent = `${accuracy}% (${correct}/${attempted})`;
+        }
+        
+        if (progressBar) {
+          progressBar.style.width = `${Math.min(accuracy, 100)}%`;
+        }
+      });
+    }
+
+    // DOM elements
+    const gameContainer = document.getElementById("gameContainer");
+    const gameArea = document.getElementById("gameArea");
+    const timeElement = document.getElementById("time");
+    const scoreElement = document.getElementById("score");
+    const resultTextElement = document.getElementById("resultText");
+    const levelSelector = document.getElementById("levelSelector");
+    const backBtn = document.getElementById("backBtn");
+
+    // Utility functions
+    function shuffle(arr) {
+      let a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function updateTimer() {
+      const m = Math.floor(timeLeft / 60);
+      const s = timeLeft % 60;
+      timeElement.textContent = m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0");
+    }
+
+    function updateScore() {
+      scoreElement.textContent = score;
+    }
+
+    function getShapes(level) {
+      if (level === "easy") return shapes_easy;
+      return (level === "hard") ? shapes_hard : shapes_moderate;
+    }
+
+    function applyPerm(arr, perm) {
+      return perm.map(p => arr[p-1]);
+    }
+
+    function createSymbolsRow(arr) {
+      const div = document.createElement("div");
+      div.className = "symbols";
+      arr.forEach(s => {
+        const d = document.createElement("div");
+        d.className = "symbol";
+        d.textContent = s;
+        div.appendChild(d);
+      });
+      return div;
+    }
+
+    function createFunnel() {
+      const fun = document.createElement("div");
+      fun.className = "funnel";
+      return fun;
+    }
+
+    function createNumberBox(str) {
+      const div = document.createElement("div");
+      div.className = "number-box";
+      div.textContent = str;
+      return div;
+    }
+
+    function createCenteredWrap(child) {
+      const wrap = document.createElement("div");
+      wrap.className = "centered-wrap";
+      wrap.appendChild(child);
+      return wrap;
+    }
+
+    // Level generators
+    function generateEasy() {
+      const shapes = getShapes("easy");
+      let top = shuffle(shapes);
+      let bottom = shuffle(shapes);
+      currentCorrectAnswer = bottom.map(s => top.indexOf(s)+1).join("");
+      
+      gameArea.innerHTML = "";
+      gameArea.appendChild(createSymbolsRow(top));
+      gameArea.appendChild(createFunnel());
+      gameArea.appendChild(createOptions(currentCorrectAnswer));
+      gameArea.appendChild(createFunnel());
+      gameArea.appendChild(createSymbolsRow(bottom));
+      gameArea.appendChild(resultTextElement);
+    }
+
+    function generateModerate() {
+      const shapes = getShapes("moderate");
+      let top = shuffle(shapes);
+      let perm = shuffle([1,2,3,4]);
+      let afterPerm = applyPerm(top, perm);
+      let bottom = shuffle([...top]);
+      currentCorrectAnswer = bottom.map(s => afterPerm.indexOf(s)+1).join("");
+      
+      gameArea.innerHTML = "";
+      gameArea.appendChild(createSymbolsRow(top));
+      gameArea.appendChild(createFunnel());
+      let permWrap = createCenteredWrap(createNumberBox(perm.join("")));
+      gameArea.appendChild(permWrap);
+      gameArea.appendChild(createFunnel());
+      gameArea.appendChild(createOptions(currentCorrectAnswer));
+      gameArea.appendChild(createFunnel());
+      gameArea.appendChild(createSymbolsRow(bottom));
+      gameArea.appendChild(resultTextElement);
+    }
+
+    function generateHard() {
+      const shapes = getShapes("hard");
+      let top = shuffle(shapes);
+      let perm1 = shuffle([1,2,3,4]);
+      let after1 = applyPerm(top, perm1);
+      let perm2 = shuffle([1,2,3,4]);
+      let after2 = applyPerm(after1, perm2);
+      let bottom = shuffle([...top]);
+      currentCorrectAnswer = bottom.map(s => after2.indexOf(s)+1).join("");
+      
+      gameArea.innerHTML = "";
+      gameArea.appendChild(createSymbolsRow(top));
+      gameArea.appendChild(createFunnel());
+      let perm1Wrap = createCenteredWrap(createNumberBox(perm1.join("")));
+      gameArea.appendChild(perm1Wrap);
+      gameArea.appendChild(createFunnel());
+      let perm2Wrap = createCenteredWrap(createNumberBox(perm2.join("")));
+      gameArea.appendChild(perm2Wrap);
+      gameArea.appendChild(createFunnel());
+      gameArea.appendChild(createOptions(currentCorrectAnswer));
+      gameArea.appendChild(createFunnel());
+      gameArea.appendChild(createSymbolsRow(bottom));
+      gameArea.appendChild(resultTextElement);
+    }
+
+    function createOptions(correct) {
+      let options = [correct];
+      while (options.length < 4) {
+        let arr = correct.split("");
+        let i = Math.floor(Math.random() * arr.length);
+        let j = Math.floor(Math.random() * arr.length);
+        while (j === i) j = Math.floor(Math.random() * arr.length);
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+        let wrong = arr.join("");
+        if (!options.includes(wrong)) options.push(wrong);
+      }
+      options = shuffle(options);
+      
+      const container = document.createElement("div");
+      container.className = "options";
+      options.forEach(opt => {
+        const btn = document.createElement("div");
+        btn.className = "option";
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(opt, btn);
+        container.appendChild(btn);
+      });
+      return container;
+    }
+
+    function checkAnswer(ans, el) {
+      if (!gameActive) return;
+      
+      challengesAttempted++;
+      levelProgress[currentLevel].attempted++;
+      
+      document.querySelectorAll(".option").forEach(b => b.onclick = null);
+      
+      let correctElem = null;
+      document.querySelectorAll(".option").forEach(b => {
+        if (b.textContent === currentCorrectAnswer) correctElem = b;
+      });
+      
+      if (ans === currentCorrectAnswer) {
+        el.classList.add("correct");
+        resultTextElement.innerHTML = "✅ Correct!";
+        score++;
+        correctAnswers++;
+        levelProgress[currentLevel].correct++;
+        updateScore();
+      } else {
+        el.classList.add("incorrect");
+        if (correctElem) correctElem.classList.add("correct");
+        resultTextElement.innerHTML = "❌ Wrong!";
+      }
+      
+      // Check for level unlock after each answer
+      checkLevelUnlock();
+      
+      setTimeout(() => {
+        if (!gameActive) return;
+        resultTextElement.innerHTML = "";
+        loadChallenge();
+      }, 1100);
+    }
+
+    function loadChallenge() {
+      if (currentLevel === "easy") generateEasy();
+      else if (currentLevel === "moderate") generateModerate();
+      else if (currentLevel === "hard") generateHard();
+    }
+
+    // Game control
+    function startGame(level) {
+      currentLevel = level;
+      score = 0;
+      challengesAttempted = 0;
+      correctAnswers = 0;
+      timeLeft = 360;
+      gameActive = true;
+      
+      updateTimer();
+      updateScore();
+      
+      levelSelector.style.display = "none";
+      gameContainer.style.display = "block";
+      resultTextElement.innerHTML = "";
+      
+      loadChallenge();
+      
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimer();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      gameActive = false;
+      
+      // Update final progress
+      saveProgress();
+      checkLevelUnlock();
+      
+      const accuracy = challengesAttempted > 0 ? Math.round((correctAnswers / challengesAttempted) * 100) : 0;
+      
+      gameArea.innerHTML = `
+        <div class="game-over">
+          Time's Up!<br>
+          <div style="font-size: 1.2rem; margin-top: 15px;">
+            Challenges: ${challengesAttempted} | Accuracy: ${accuracy}%
+          </div>
+        </div>
+        <div class="final-score">Final Score: ${correctAnswers}</div>
+        <div style="text-align:center; margin-top: 20px;">
+          <button class="start-button" onclick="startGame('${currentLevel}')" style="margin-right: 10px;">Play Again</button>
+          <button class="start-button" onclick="backToMenu()" style="background: #6c757d;">Choose Level</button>
+        </div>
+      `;
+    }
+
+    function backToMenu() {
+      if (timerInterval) clearInterval(timerInterval);
+      gameActive = false;
+      levelSelector.style.display = "flex";
+      gameContainer.style.display = "none";
+      updateLevelCards();
+    }
+
+    // Event listeners
+    document.querySelectorAll(".start-button").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const level = e.target.dataset.level;
+        if (level && levelProgress[level].unlocked) {
+          startGame(level);
+        }
+      });
+    });
+
+    backBtn.addEventListener("click", backToMenu);
+
+    // Initialize
+    updateTimer();
+    updateScore();
+    loadProgress();
+  </script>
+</body>
+</html>
